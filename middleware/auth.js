@@ -1,0 +1,26 @@
+const jwt = require('jsonwebtoken')
+const User = require('../models/auth')
+const ErrorResponse = require('../utils/errorResponse')
+
+const protect = async (req, res, next) => {
+  let token
+
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1]
+  }
+  if (!token) {
+    return next(new ErrorResponse('Not Authorized'), 401)
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    const user = User.findById(decoded.id)
+    if (!user) {
+      return next(new ErrorResponse('User does not exit', 401))
+    }
+    req.user = user
+    next()
+  } catch (error) {
+    return next(new ErrorResponse(error, 401))
+  }
+}
+module.exports = { protect }
